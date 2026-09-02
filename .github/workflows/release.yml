@@ -1,52 +1,27 @@
-name: "test sign"
+name: Release
 
 on:
   push:
-    branches:
-      - master
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
-    name: test sign script
-
     steps:
-      - name: checkout code
-        uses: actions/checkout@v1
-
-      - name: get latest build tools version
-        id: sdk
-        run: |
-          echo version=$(ls $ANDROID_HOME/build-tools | tail -n 1) >> $GITHUB_OUTPUT
-
-      - name: set up environment
-        run: npm i --include=dev
-  
-      - name: test script
-        run: npm run test
-
-      - name: get signing key
-        id: key
-        run: echo text=$(cat __tests__/test_key_b64.txt) >> $GITHUB_OUTPUT
-
-      - name: sign apk
-        uses: ./
-        env:
-          BUILD_TOOLS_VERSION: ${{steps.sdk.outputs.version}}
+      - name: Checkout
+        uses: actions/checkout@v7
         with:
-          alias: test_key
-          keyPassword: android
-          keyStorePassword: android
-          releaseDirectory: __tests__/apk
-          signingKeyBase64: ${{steps.key.outputs.text}}
+          fetch-depth: 0
 
-      - name: sign aab
-        uses: ./
-        env:
-          BUILD_TOOLS_VERSION: ${{steps.sdk.outputs.version}}
+      - name: Upload release
+        uses: softprops/action-gh-release@v2
         with:
-          alias: test_key
-          keyPassword: android
-          keyStorePassword: android
-          releaseDirectory: __tests__/aab
-          signingKeyBase64: ${{steps.key.outputs.text}}
+          tag_name: ${{ github.ref_name }}
+          body: |
+            Release ${{ github.ref_name }}
+            ${{ github.event.head_commit.message }}
+          generate_release_notes: true
